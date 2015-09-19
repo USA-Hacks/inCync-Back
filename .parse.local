@@ -1,0 +1,10 @@
+{
+  "applications": {
+    "_default": {
+      "link": "incync-backend"
+    },
+    "incync-backend": {
+      "applicationId": "w2xsWBBHSdJg7UkZAyA0We19GMbV9rMPKwnRBYv6"
+    }
+  }
+}
