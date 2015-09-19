@@ -32,6 +32,27 @@ Parse.Cloud.define("start_presentation", function(request, response) {
   });
 });
 
+Parse.Cloud.define("update_presentation", function(request, response) {
+  var Presentation = Parse.Object.extend("Presentation");
+  var query = new Parse.Query(Presentation);
+  query.get(request.params.id, {
+    success: function(presentation) {
+      var settings = presentation.set("settings", request.params.settings);
+      presentation.save(null, {
+        success: function(presentation) {
+          response.success(presentation.id);
+        },
+        error: function(object, error) {
+          response.error(error.message);
+        }
+      });
+    },
+    error: function(object, error) {
+      response.error(error.message);
+    }
+  });
+});
+
 Parse.Cloud.define("get_presentation", function(request, response) {
   var Presentation = Parse.Object.extend("Presentation");
   var query = new Parse.Query(Presentation);
