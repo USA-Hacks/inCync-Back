@@ -67,3 +67,17 @@ Parse.Cloud.define("create_presentation", function(request, response) {
     });
   }
 })
+
+Parse.Cloud.define("validate", function(request, response) {
+  var Presentation = Parse.Object.extend("Presentation");
+  var query = new Parse.Query(Presentation);
+  query.equalTo("name", request.params.name);
+  query.find({
+    success: function(results) {
+      var found = false;
+      if(results.length) found = true;
+      response.success(found);
+    },
+    error: function(error) { response.error(); }
+  });
+});
