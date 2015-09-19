@@ -1,3 +1,5 @@
+var job = require('cloud/job.js')
+
 Parse.Cloud.define("start_presentation", function(request, response) {
   var Presentation = Parse.Object.extend("Presentation");
   var query = new Parse.Query(Presentation);
@@ -56,13 +58,13 @@ Parse.Cloud.define("update_presentation", function(request, response) {
 Parse.Cloud.define("get_presentation", function(request, response) {
   var Presentation = Parse.Object.extend("Presentation");
   var query = new Parse.Query(Presentation);
-  query.get(request.params.id, {
-    success: function(presentation) {
-      response.success(JSON.stringify(presentation));
+  query.equalTo("name", request.params.name);
+  query.find({
+    success: function(results) {
+      var result = results[0]
+      response.success(JSON.stringify(result));
     },
-    error: function(object, error) {
-      response.error(error.message);
-    }
+    error: function(error) { response.error(); }
   });
 });
 
