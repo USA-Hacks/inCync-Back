@@ -1,5 +1,3 @@
-var job = require('cloud/job.js')
-
 Parse.Cloud.define("start_presentation", function(request, response) {
   var Presentation = Parse.Object.extend("Presentation");
   var query = new Parse.Query(Presentation);
@@ -18,9 +16,11 @@ Parse.Cloud.define("start_presentation", function(request, response) {
       }
 
       presentation.set("times", times);
+      presentation.set("started", true);
 
       presentation.save(null, {
         success: function(presentation) {
+          publish_cync(presentation.id.toString(), {type: "start", presentation: JSON.stringify(presentation)});
           response.success(presentation.id);
         },
         error: function(object, error) {
@@ -79,6 +79,7 @@ Parse.Cloud.define("create_presentation", function(request, response) {
     presentation.set("name", request.params.name);
     presentation.set("settings", request.params.settings);
     presentation.set("times", []);
+    presentation.set("started", false);
 
     presentation.save(null, {
       success: function(presentation) {
@@ -102,5 +103,76 @@ Parse.Cloud.define("validate", function(request, response) {
       response.success(found);
     },
     error: function(error) { response.error(); }
+  });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+var pubnub = {
+  publish_key:'pub-c-5f5b4359-bec5-4bb4-a396-db7ccb6282ce',
+  subscribe_key:'sub-c-8495b6b2-5f09-11e5-a028-0619f8945a4f'
+};
+
+var publish_cync = function(channel, message) {
+  Parse.Cloud.httpRequest({
+    url: 'http://pubsub.pubnub.com/publish/' +
+         pubnub.publish_key   +   '/' +
+         pubnub.subscribe_key + '/0/' +
+         channel          + '/0/' +
+         encodeURIComponent(JSON.stringify(message)),
+
+    success: function(httpResponse) {
+        console.log(httpResponse.text);
+    },
+    error: function(httpResponse) {
+        console.error('Request failed ' + httpResponse.status);
+    }
+  });
+}
+
+Parse.Cloud.define("cync", function(request, response) {
+  var query = new Parse.Query("Presentation");
+  query.equalTo("started", true);
+
+  query.find({
+    success: function(results) {
+      for(var i = 0; i < results.length; i++) {
+        var now = new Date();
+        var result = results[i];
+        var times = result.get("times");
+        var id = result.id;
+
+        for(var j = 0; j < times.length; j++) {
+          var time = times[j];
+          if(time.time <= now && !time.visited) {
+            console.log("Telling " + id.toString() + " to vibrate!");
+            publish_cync(id.toString(), {type: "vibrate"});
+            time.visited = true;
+            if(j === (times.length - 1)) {
+              result.set("started", false);
+              result.set("times", []);
+            }
+            result.save();
+          }
+        }
+      }
+
+      response.success();
+    },
+    error: function(error) {
+      console.log(error.message);
+      response.error();
+    }
   });
 });
